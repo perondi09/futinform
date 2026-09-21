@@ -1,0 +1,13 @@
+package perondi.futinform;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class FutinformApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(FutinformApplication.class, args);
+	}
+
+}
