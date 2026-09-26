@@ -1,4 +1,4 @@
-package perondi.futinform.dto.auth;
+package perondi.futinform.dtos.auth;
 
 import jakarta.validation.constraints.NotBlank;
 

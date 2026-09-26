@@ -1,4 +1,3 @@
-package perondi.futinform.dtos;
+package perondi.futinform.dtos.auth;
 
-public class AuthResponse {
-}
+public record AuthResponse(String token) {}
