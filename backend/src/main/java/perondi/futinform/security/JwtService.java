@@ -50,6 +50,7 @@ public class JwtService {
             Jwts.parser().verifyWith(key).build().parseSignedClaims(token);
             return true;
         } catch (Exception e) {
+            log.warn("JWT validation failed: {}", e.getMessage());
             return false;
         }
     }
