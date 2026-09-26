@@ -36,3 +36,6 @@ Thumbs.db
 *.log
 *.tmp
 *.temp
+
+# Configurações locais do Spring Boot
+src/main/resources/application-local.properties
