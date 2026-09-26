@@ -1,17 +1,18 @@
 package perondi.futinform.controllers;
 
+import perondi.futinform.dtos.ApiResponse;
 import perondi.futinform.dtos.auth.*;
-import perondi.futinform.dtos.auth.AuthResponse;
-import perondi.futinform.dtos.auth.LoginRequest;
-import perondi.futinform.dtos.auth.RegisterRequest;
 import perondi.futinform.entities.UserEntity;
+import perondi.futinform.exceptions.*;
 import perondi.futinform.repositories.UserRepository;
 import perondi.futinform.security.JwtService;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
@@ -27,37 +28,48 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest request) {
+        log.info("Registration attempt for username={}", request.username());
+
         if (userRepository.existsByUsername(request.username())) {
-            throw new IllegalStateException("Username já em uso");
+            throw new UsernameAlreadyExistsException(request.username());
         }
         if (userRepository.existsByEmail(request.email())) {
-            throw new IllegalStateException("Email já em uso");
+            throw new EmailAlreadyExistsException(request.email());
+        }
+        if (userRepository.existsByPhone(request.phone())) {
+            throw new PhoneAlreadyExistsException(request.phone());
         }
 
         UserEntity user = new UserEntity();
         user.setName(request.name());
         user.setUsername(request.username());
         user.setEmail(request.email());
+        user.setPhone(request.phone());
         user.setPasswordHash(passwordEncoder.encode(request.password()));
 
         userRepository.save(user);
+        log.info("User created successfully: id={}, username={}", user.getId(), user.getUsername());
 
         String token = jwtService.generateToken(user.getId());
-        return ResponseEntity.ok(new AuthResponse(token));
+        return ResponseEntity.ok(ApiResponse.success("User created successfully", new AuthResponse(token)));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
+        log.info("Login attempt for identifier={}", request.usernameOrEmail());
+
         UserEntity user = userRepository
                 .findByUsernameOrEmail(request.usernameOrEmail(), request.usernameOrEmail())
-                .orElseThrow(() -> new IllegalStateException("Credenciais inválidas"));
+                .orElseThrow(InvalidCredentialsException::new);
 
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
-            throw new IllegalStateException("Credenciais inválidas");
+            log.warn("Failed login attempt for identifier={}", request.usernameOrEmail());
+            throw new InvalidCredentialsException();
         }
 
+        log.info("Login successful: id={}, username={}", user.getId(), user.getUsername());
         String token = jwtService.generateToken(user.getId());
-        return ResponseEntity.ok(new AuthResponse(token));
+        return ResponseEntity.ok(ApiResponse.success("Login successful", new AuthResponse(token)));
     }
 }
